@@ -31,7 +31,7 @@ using namespace CHSH;
 #define CalculateRatio 1
 #define DrawTime 1
 #define UseIntegralCut 1
-#define UseNotEntangledPhotons 0
+#define UseNotEntangledPhotons 1
 #define TotalEnergyCut 0
 #define DrawToPDF 0
 #define calculate_CHSH 1
@@ -39,10 +39,12 @@ using namespace CHSH;
 /////////////////////////////////////////////////////
 void Final_Analysis()
 {
-    const Int_t events_divider = 100;
+    const Int_t events_divider = 1;
 	gStyle->SetOptFit(1);
 	//gStyle->SetOptStat(1111);
 	TString source_path = "/home/doc/entanglement/root_files_data/with_scatterer/big_file/";
+	//TString source_path = "/home/doc/entanglement/root_files_data/collimator_4_8_cm_further_from_diffuser/";
+
 #if UseNotEntangledPhotons
     TString result_path  = source_path + "result_ev_b_ev_decoh_new";
 #else
@@ -907,69 +909,113 @@ void Final_Analysis()
 
 /////////////////////
 /////////////////////CHSH inequality
-            #if calculate_CHSH
-                const Int_t total_angles = 8;
-                Float_t phi_angle[total_angles] = {0.};
-                for (Int_t i = 0; i < total_angles; i++) phi_angle[i] = (float)(i+1)*22.5;
+        TF1 *my_fit = new TF1 ("my_fit","[0]*(cos(6*3.141593/180*x)-3*cos(2*3.141593/180*x))",-190,190);
 
+        #if calculate_CHSH
+            const Int_t total_angles = 8;
+            const Int_t all_angles = total_angles*2;
+            Float_t phi_angle[all_angles] = {0.};
+            for (Int_t i = 0; i < total_angles; i++) phi_angle[i] = (float)(i+1)*22.5;
+            for (Int_t i = 0; i < total_angles; i++) phi_angle[total_angles+i] = -(float)(i+1)*22.5;
 
-                Float_t CHSH[total_angles] = {0};
-                Float_t CHSH_error[total_angles] = {0};
-                Float_t global_CHSH[total_angles] = {0};
-                Float_t global_CHSH_error[total_angles] = {0};
-                for (Int_t a_angle = 0; a_angle < 16; a_angle++)
-                {
-                    Float_t CHSH_error_local[total_angles] = {0};
-                    Float_t CHSH_local[total_angles] = {0};
-                    for (Int_t angle_between_counters = 1; angle_between_counters <= total_angles; angle_between_counters++)
-                    {
-                        
-                        CHSH_local[angle_between_counters-1] = 
-                        calculate_local_CHSH(NumEvents, a_angle, angle_between_counters);
-
-                        CHSH_error_local[angle_between_counters-1] = 
-                        calculate_local_CHSH_error(NumEvents, a_angle, angle_between_counters);
-
-
-                        CHSH[angle_between_counters-1] += CHSH_local[angle_between_counters-1];
-                        CHSH_error[angle_between_counters-1] += CHSH_error_local[angle_between_counters-1];       
-                        CHSH_error_local[angle_between_counters-1] = sqrt(CHSH_error_local[angle_between_counters-1]);           
-                    }
-
-                        TGraphErrors * gr_CHSH = new TGraphErrors(8,phi_angle,CHSH_local, angle_arr_err, CHSH_error_local);
-                        TF1 *my_fit = new TF1 ("my_fit","[0]*(cos(6*3.141593/180*x)-3*cos(2*3.141593/180*x))",10,190);
-                        gr_CHSH->Fit("my_fit","R");
-                        Float_t a_par_CHSH = abs(my_fit->GetParameter(0));
-                        Float_t a_error_CHSH = abs(my_fit->GetParError(0));
-                        TCanvas *canvas_CHSH = new TCanvas ( Form("canvas_CHSH_a=%i",a_angle), Form("canvas_CHSH_a=%i",a_angle));
-                        canvas_CHSH->cd();
-                        graph_like_ivashkin_wants_it(gr_CHSH,"angle [degrees]","S", Form("canvas_CHSH_a=%i <> E(90) = %4.3f+-%4.3f",a_angle,E_coeff(NumEvents,a_angle,a_angle+4),sqrt(sqr_E_error(NumEvents,a_angle,a_angle+4))),1);
-                        gr_CHSH->Draw("AP");
-                        canvas_CHSH->SaveAs(result_path+".pdf",".pdf");
-
-                }
-
-                cout <<endl<<endl<<endl<<endl;
-                for (Int_t i = 0; i < 8; i++) 
-                {
-                    CHSH[i] = CHSH[i]/16;
-                    CHSH_error[i] = sqrt(CHSH_error[i])/16;
-                }
-                for (Int_t i = 0; i < 8; i++) cout<< CHSH[i] <<" ";
-                cout <<endl<<endl<<endl<<endl; 
-                for (Int_t i = 0; i < 8; i++) cout<< CHSH_error[i] <<" ";
-                cout <<endl<<endl<<endl<<endl;                 
-
-                cout <<endl<<endl<<endl<<endl;
+            Float_t CHSH[total_angles] = {0}; Float_t CHSH_all[all_angles] = {0};
+            Float_t CHSH_error[total_angles] = {0}; Float_t CHSH_error_all[all_angles] = {0};
+            Float_t global_CHSH[total_angles] = {0}; Float_t global_CHSH_all[all_angles] = {0};
+            Float_t global_CHSH_error[total_angles] = {0}; Float_t global_CHSH_error_all[all_angles] = {0};
+            for (Int_t a_angle = 0; a_angle < 16; a_angle++)
+            {
+                Float_t CHSH_error_local[all_angles] = {0};  Float_t CHSH_error_local_sum[total_angles] = {0};
+                Float_t CHSH_local[all_angles] = {0}; Float_t CHSH_local_sum[total_angles] = {0};
                 for (Int_t angle_between_counters = 1; angle_between_counters <= total_angles; angle_between_counters++)
                 {
-                    global_CHSH[angle_between_counters-1] = global_calculate_CHSH(angle_between_counters, NumEvents);
-                    global_CHSH_error[angle_between_counters-1] = sqrt(global_calculate_CHSH_error(angle_between_counters, NumEvents));
-                    cout<< global_CHSH_error[angle_between_counters-1] <<" ";
+                    
+                    CHSH_local[angle_between_counters-1] = 
+                    calculate_local_CHSH(NumEvents, a_angle, angle_between_counters, "clockwise");
+                    CHSH_error_local[angle_between_counters-1] = 
+                    calculate_local_CHSH_error(NumEvents, a_angle, angle_between_counters, "clockwise");
+                    CHSH_local[total_angles + angle_between_counters-1] = 
+                    calculate_local_CHSH(NumEvents, a_angle, angle_between_counters, "counterclockwise");
+                    CHSH_error_local[total_angles + angle_between_counters-1] = 
+                    calculate_local_CHSH_error(NumEvents, a_angle, angle_between_counters, "counterclockwise");
+
+                    CHSH_local_sum[angle_between_counters-1] = (CHSH_local[angle_between_counters-1] + CHSH_local[angle_between_counters+total_angles-1])/2;
+                    CHSH_error_local_sum[angle_between_counters-1] = CHSH_error_local[angle_between_counters-1] + CHSH_error_local[angle_between_counters+total_angles-1];
+                    
+                    CHSH[angle_between_counters-1] += CHSH_local_sum[angle_between_counters-1];
+                    CHSH_error[angle_between_counters-1] += CHSH_error_local_sum[angle_between_counters-1];       
+                    CHSH_error_local_sum[angle_between_counters-1] = sqrt(CHSH_error_local_sum[angle_between_counters-1])/2;  
+
+                    CHSH_all[angle_between_counters-1] += CHSH_local[angle_between_counters-1];
+                    CHSH_all[angle_between_counters + total_angles-1] += CHSH_local[angle_between_counters + total_angles-1];
+
+                    CHSH_error_all[angle_between_counters-1] += CHSH_error_local[angle_between_counters-1];  
+                    CHSH_error_all[angle_between_counters + total_angles-1] += CHSH_error_local[angle_between_counters + total_angles-1];  
+
+                    CHSH_error_local[angle_between_counters-1] = sqrt(CHSH_error_local[angle_between_counters-1]); 
+                    CHSH_error_local[angle_between_counters + total_angles-1] = sqrt(CHSH_error_local[angle_between_counters + total_angles-1]); 
 
                 }
-                cout <<endl<<endl<<endl<<endl;
-            #endif
+
+                    TCanvas *canvas_CHSH = new TCanvas ( Form("canvas_CHSH_a=%i",a_angle), Form("canvas_CHSH_a=%i",a_angle));
+                    TGraphErrors * gr_CHSH = new TGraphErrors(total_angles,phi_angle,CHSH_local_sum, angle_arr_err, CHSH_error_local_sum);
+                    //TF1 *my_fit_2 = new TF1 ("my_fit_2","[0]*(cos(6*3.141593/180*x)-3*cos(2*3.141593/180*x))",10,190);
+                    canvas_CHSH->Divide(2);
+
+                    gr_CHSH->Fit("my_fit","R");
+                    Float_t a_par_CHSH = abs(my_fit->GetParameter(0));
+                    Float_t a_error_CHSH = abs(my_fit->GetParError(0));
+                    graph_like_ivashkin_wants_it(gr_CHSH,"angle [degrees]","S", 
+                    Form("canvas_CHSH_a=%i <> E(90) = %4.3f+-%4.3f",a_angle,
+                    (E_coeff(NumEvents,a_angle,true_number(a_angle+4))+E_coeff(NumEvents,a_angle,true_number(a_angle-4)))/2,
+                    sqrt(sqr_E_error(NumEvents,a_angle,true_number(a_angle+4))+sqr_E_error(NumEvents,a_angle,true_number(a_angle-4)))/2),1);
+                    canvas_CHSH->cd(1);
+                    gr_CHSH->Draw("AP");
+
+                    //TF1 *my_fit = new TF1 ("my_fit","[0]*(cos(6*3.141593/180*x)-3*cos(2*3.141593/180*x))",-190,190);
+                    TGraphErrors * gr_CHSH_all = new TGraphErrors(all_angles,phi_angle,CHSH_local, angle_arr_err, CHSH_error_local);
+                    gr_CHSH_all->Fit("my_fit","R");
+                    a_par_CHSH = abs(my_fit->GetParameter(0));
+                    a_error_CHSH = abs(my_fit->GetParError(0));
+                    graph_like_ivashkin_wants_it(gr_CHSH_all,"angle [degrees]","S", Form("canvas_CHSH_a=%i <> E(90) = %4.3f+-%4.3f",a_angle,E_coeff(NumEvents,a_angle,true_number(a_angle+4)),sqrt(sqr_E_error(NumEvents,a_angle,true_number(a_angle+4)))),1);
+                    canvas_CHSH->cd(2);
+                    gr_CHSH_all->Draw("AP");
+                    canvas_CHSH->SaveAs(result_path+".pdf",".pdf");
+
+            }
+
+            cout <<endl<<endl<<endl<<endl;
+            for (Int_t i = 0; i < all_angles; i++) 
+            {
+                if ( i < 8)
+                {
+                    CHSH[i] = CHSH[i]/16;
+                    CHSH_error[i] = sqrt(CHSH_error[i])/32;
+                }
+                    CHSH_all[i] = CHSH_all[i]/16;
+                    CHSH_error_all[i] = sqrt(CHSH_error_all[i])/16;
+
+            }
+            for (Int_t i = 0; i < 8; i++) cout<< CHSH[i] <<" ";
+            cout <<endl<<endl<<endl<<endl; 
+            for (Int_t i = 0; i < 8; i++) cout<< CHSH_error[i] <<" ";
+            cout <<endl<<endl<<endl<<endl;                 
+
+            cout <<endl<<endl<<endl<<endl;
+            for (Int_t angle_between_counters = 1; angle_between_counters <= total_angles; angle_between_counters++)
+            {
+                global_CHSH_all[angle_between_counters-1] = global_calculate_CHSH(angle_between_counters, NumEvents,"clockwise");
+                global_CHSH_error_all[angle_between_counters-1] = sqrt(global_calculate_CHSH_error(angle_between_counters, NumEvents,"clockwise"));
+                global_CHSH_all[total_angles+angle_between_counters-1] = global_calculate_CHSH(angle_between_counters, NumEvents,"counterclockwise");
+                global_CHSH_error_all[total_angles+angle_between_counters-1] = sqrt(global_calculate_CHSH_error(angle_between_counters, NumEvents,"counterclockwise"));
+
+
+                global_CHSH[angle_between_counters-1] = global_calculate_CHSH(angle_between_counters, NumEvents,"both");
+                global_CHSH_error[angle_between_counters-1] = sqrt(global_calculate_CHSH_error(angle_between_counters, NumEvents,"both"));
+                cout<< global_CHSH_error[angle_between_counters-1] <<" ";
+
+            }
+            cout <<endl<<endl<<endl<<endl;
+        #endif
 
 ///////////////////////////////////////
 ///////////////////////////////////////
@@ -981,34 +1027,51 @@ Float_t average_E = 0; Float_t sigma_E_average = 0;
 
     for (Int_t a = 0; a < 16; a++)
     {
-        Int_t b = a+4;
-        while ( b > 15) b = b - 16;
-        average_E += E_coeff(NumEvents,a,b)/16.;
-        sigma_E_average += sqr_E_error(NumEvents,a,b);
+        Int_t b = true_number(a+4); Int_t b_1 = true_number(a-4);
+        average_E += (E_coeff(NumEvents,a,b) + E_coeff(NumEvents,a,b_1))/32.;
+        sigma_E_average += (sqr_E_error(NumEvents,a,b)+sqr_E_error(NumEvents,a,b_1));
     }
-    sigma_E_average = sqrt(sigma_E_average)/16;
-    TGraphErrors * gr_CHSH = new TGraphErrors(8,phi_angle,CHSH, angle_arr_err, CHSH_error);
-	TF1 *my_fit = new TF1 ("my_fit","[0]*(cos(6*3.141593/180*x)-3*cos(2*3.141593/180*x))",10,190);
+    sigma_E_average = sqrt(sigma_E_average)/32;
+    TCanvas *canvas_CHSH = new TCanvas ( "canvas_CHSH", "canvas_CHSH");
+    canvas_CHSH->Divide(2);
+
+    TGraphErrors * gr_CHSH = new TGraphErrors(total_angles,phi_angle,CHSH, angle_arr_err, CHSH_error);
 	gr_CHSH->Fit("my_fit","R");
     Float_t a_par_CHSH = abs(my_fit->GetParameter(0));
     Float_t a_error_CHSH = abs(my_fit->GetParError(0));
-    TCanvas *canvas_CHSH = new TCanvas ( "canvas_CHSH", "canvas_CHSH");
-    canvas_CHSH->cd();
+    canvas_CHSH->cd(1);
     graph_like_ivashkin_wants_it(gr_CHSH,"angle [degrees]","S", Form("Average E <> E(90) = %4.3f+-%4.3f",average_E,sigma_E_average),1);
     gr_CHSH->Draw("AP");
+    TGraphErrors * gr_CHSH_all = new TGraphErrors(all_angles,phi_angle,CHSH_all, angle_arr_err, CHSH_error_all);
+	gr_CHSH_all->Fit("my_fit","R");
+    a_par_CHSH = abs(my_fit->GetParameter(0));
+    a_error_CHSH = abs(my_fit->GetParError(0));
+    canvas_CHSH->cd(2);
+    graph_like_ivashkin_wants_it(gr_CHSH_all,"angle [degrees]","S", Form("Average E <> E(90) = %4.3f+-%4.3f",average_E,sigma_E_average),1);
+    gr_CHSH_all->Draw("AP");    
     canvas_CHSH->SaveAs(result_path+".pdf",".pdf");
 
 
-
-	TF1 *global_my_fit = new TF1 ("global_my_fit","[0]*(cos(6*3.141593/180*x)-3*cos(2*3.141593/180*x))",10,190);
-    TGraphErrors * global_gr_CHSH = new TGraphErrors(8,phi_angle,global_CHSH, angle_arr_err, global_CHSH_error);
-	global_gr_CHSH->Fit("global_my_fit","R");
-    a_par_CHSH = abs(global_my_fit->GetParameter(0));
-    a_error_CHSH = abs(global_my_fit->GetParError(0));
     TCanvas *global_canvas_CHSH = new TCanvas ( "global_canvas_CHSH", "global_canvas_CHSH");
-    global_canvas_CHSH->cd();
-    graph_like_ivashkin_wants_it(global_gr_CHSH,"angle [degrees]","S", Form("Sum N <> E(90) = %4.3f+-%4.3f",global_E_coeff(4,NumEvents), sqrt(global_sqr_E_error(4,NumEvents))),1);
+    global_canvas_CHSH->Divide(2);
+
+    TGraphErrors * global_gr_CHSH = new TGraphErrors(total_angles,phi_angle,global_CHSH, angle_arr_err, global_CHSH_error);
+	global_gr_CHSH->Fit("my_fit","R");
+    a_par_CHSH = abs(my_fit->GetParameter(0));
+    a_error_CHSH = abs(my_fit->GetParError(0));
+    global_canvas_CHSH->cd(1);
+    graph_like_ivashkin_wants_it(global_gr_CHSH,"angle [degrees]","S", Form("Sum N <> E(90) = %4.3f+-%4.3f",global_E_coeff(4,NumEvents,"both"), sqrt(global_sqr_E_error(4,NumEvents, "both"))),1);
     global_gr_CHSH->Draw("AP");
+    
+    TGraphErrors * global_gr_CHSH_all = new TGraphErrors(all_angles,phi_angle,global_CHSH_all, angle_arr_err, global_CHSH_error_all);
+	global_gr_CHSH_all->Fit("my_fit","R");
+    a_par_CHSH = abs(my_fit->GetParameter(0));
+    a_error_CHSH = abs(my_fit->GetParError(0));
+    global_canvas_CHSH->cd(2);
+    graph_like_ivashkin_wants_it(global_gr_CHSH_all,"angle [degrees]","S", Form("Sum N <> E(90) = %4.3f+-%4.3f",global_E_coeff(4,NumEvents,"both"), sqrt(global_sqr_E_error(4,NumEvents, "both"))),1);
+       
+    
+    global_gr_CHSH_all->Draw("AP");
     global_canvas_CHSH->SaveAs(result_path+".pdf",".pdf");
 
 
