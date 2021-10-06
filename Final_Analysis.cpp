@@ -27,11 +27,11 @@ using namespace std;
 using namespace CHSH;
 
 #define UseManyRoots 0
-#define PresentDiffuser 1
+#define PresentDiffuser 0
 #define CalculateRatio 1
 #define DrawTime 1
 #define UseIntegralCut 1
-#define UseNotEntangledPhotons 1
+#define UseNotEntangledPhotons 0
 #define TotalEnergyCut 0
 #define DrawToPDF 0
 #define calculate_CHSH 1
@@ -42,7 +42,7 @@ void Final_Analysis()
     const Int_t events_divider = 1;
 	gStyle->SetOptFit(1);
 	//gStyle->SetOptStat(1111);
-	TString source_path = "/home/doc/entanglement/root_files_data/with_scatterer/big_file/";
+	TString source_path = "/home/doc/entanglement/new_files_data/";
 	//TString source_path = "/home/doc/entanglement/root_files_data/collimator_4_8_cm_further_from_diffuser/";
 
 #if UseNotEntangledPhotons
@@ -217,7 +217,9 @@ void Final_Analysis()
 
                 && short_channel_info[32].integral_in_gate > 140
                 && short_channel_info[32].integral_in_gate < 400             
-#endif         
+#endif   
+
+#if PresentDiffuser
 #if UseNotEntangledPhotons
 
                 && short_channel_info[34].amp < 50000
@@ -228,7 +230,7 @@ void Final_Analysis()
                 && short_channel_info[34].amp < 400
                 && abs(short_channel_info[34].peak_pos - short_channel_info[32].peak_pos) > 100
 #endif
-
+#endif
                 ) 
                     {
                         peak_histo[channel_number]->Fill(short_channel_info[channel_number].integral_in_gate);
@@ -284,7 +286,7 @@ void Final_Analysis()
 
                 canv_0->SaveAs(result_path+".pdf(",".pdf");
             
-/*            #if DrawToPDF
+            #if DrawToPDF
             TCanvas *temp_canv = new TCanvas("temp_canv","temp_canv");
             temp_canv->Divide(2);
             temp_canv->cd(1);
@@ -296,7 +298,7 @@ void Final_Analysis()
 
             temp_canv->SaveAs(result_path + ".pdf(",".pdf");
             #endif
-*/            /////////////////////////////////////////////////
+            /////////////////////////////////////////////////
 
 
 ////////////////////////energy in diffuser
@@ -333,7 +335,7 @@ void Final_Analysis()
                 && short_channel_info[32].amp > 400 
                 && short_channel_info[channel_number].amp > 400 && short_channel_info[channel_number].amp < 60000
 
-
+#if PresentDiffuser
 #if UseNotEntangledPhotons
 
                 && short_channel_info[34].amp < 50000
@@ -345,7 +347,7 @@ void Final_Analysis()
                 && short_channel_info[34].amp < 400
                 && abs(short_channel_info[34].peak_pos - short_channel_info[32].peak_pos) > 100
 #endif
-      
+#endif    
 
 
 
@@ -385,13 +387,14 @@ void Final_Analysis()
 ///////////////////////////////
 /////////energy in scatterer
 /////////full_spectrum
-/*            TCanvas *canv_00 = new TCanvas("canv_00","canv_00");
+            TCanvas *canv_00 = new TCanvas("canv_00","canv_00");
             canv_00->Divide(2);
             canv_00->cd(1);
             PMT_tree->Draw("channel_32.integral_in_gate >> TRUE_peak_scatterer_left_sum_spectrum"
             ,"channel_32.peak_pos - channel_33.peak_pos > -30 && channel_32.peak_pos - channel_33.peak_pos < 30"
             "&& channel_32.amp < 60000 && channel_32.amp > 400"
             "&& channel_33.amp > 400 && channel_33.amp < 60000"
+
     #if UseNotEntangledPhotons
             "&& channel_32.peak_pos - channel_34.peak_pos > -60 && channel_32.peak_pos - channel_34.peak_pos < 60"
             "&& channel_34.amp > 400 && channel_34.amp < 60000"            
@@ -414,7 +417,7 @@ void Final_Analysis()
             canv_00->SaveAs(result_path + ".pdf(",".pdf");
             true_sc_sum_hist_left->Write();
             true_sc_sum_hist_right->Write();
-*/
+
 //////if hits NaI near photopeak
         for (Int_t channel_number = 0; channel_number < 32; channel_number++)
         {
@@ -451,7 +454,7 @@ void Final_Analysis()
                 && short_channel_info[32].amp > 400 
                 && short_channel_info[channel_number].amp > 400 && short_channel_info[channel_number].amp < 60000
 
-
+#if PresentDiffuser
 #if UseNotEntangledPhotons
 
                 && short_channel_info[34].amp < 50000
@@ -462,7 +465,7 @@ void Final_Analysis()
                 && short_channel_info[34].amp < 400
                 && abs(short_channel_info[34].peak_pos - short_channel_info[32].peak_pos) > 100
 #endif
-      
+#endif      
 
 
 
@@ -595,7 +598,7 @@ void Final_Analysis()
                 &&   short_channel_info[33].peak_pos > 1600
                 &&   short_channel_info[32].peak_pos > 1600
 
-
+#if PresentDiffuser
 #if UseNotEntangledPhotons
 
                 && short_channel_info[34].amp < 50000
@@ -607,7 +610,7 @@ void Final_Analysis()
                 && short_channel_info[34].amp < 400
                 && abs(short_channel_info[34].peak_pos - short_channel_info[32].peak_pos) > 100
 #endif
-
+#endif
                     && short_channel_info[channel_number].amp > 400 && short_channel_info[channel_number].amp < 60000
                     && short_channel_info[sc_number].amp > 400 && short_channel_info[sc_number].amp < 60000                
                     )
@@ -631,7 +634,7 @@ void Final_Analysis()
                     && short_channel_info[32].amp < 60000     
                     && short_channel_info[32].amp > 400
 
-
+#if PresentDiffuser
 #if UseNotEntangledPhotons
 
                 && short_channel_info[34].amp < 50000
@@ -640,7 +643,7 @@ void Final_Analysis()
                 && short_channel_info[34].amp < 400
                 && abs(short_channel_info[34].peak_pos - short_channel_info[32].peak_pos) > 100
 #endif
-
+#endif
 
                     && short_channel_info[channel_number].amp > 400 && short_channel_info[channel_number].amp < 60000
                     )
@@ -734,7 +737,7 @@ void Final_Analysis()
                 &&   short_channel_info[channel_number].peak_pos > 1600
                 &&   short_channel_info[33].peak_pos > 1600
                 &&   short_channel_info[32].peak_pos > 1600
-
+#if PresentDiffuser
 #if UseNotEntangledPhotons
 
                 && short_channel_info[34].amp < 50000
@@ -747,6 +750,7 @@ void Final_Analysis()
 #else 
                 && short_channel_info[34].amp < 400
                 && abs(short_channel_info[34].peak_pos - short_channel_info[32].peak_pos) > 100
+#endif
 #endif
                 /*&& short_channel_info[33].amp < 60000
                 && short_channel_info[33].amp > 400
@@ -862,7 +866,7 @@ void Final_Analysis()
                 && (short_channel_info[channel_number].peak_pos - short_channel_info[32].peak_pos) < 200
                 && (short_channel_info[channel_number_2].peak_pos - short_channel_info[33].peak_pos) > 100
                 && (short_channel_info[channel_number_2].peak_pos - short_channel_info[33].peak_pos) < 200
-
+#if PresentDiffuser
 #if UseNotEntangledPhotons
 
                 && short_channel_info[34].amp < 50000
@@ -875,6 +879,7 @@ void Final_Analysis()
 #else 
                 && short_channel_info[34].amp < 400
                 && abs(short_channel_info[34].peak_pos - short_channel_info[32].peak_pos) > 100
+#endif
 #endif
 
 #if TotalEnergyCut
