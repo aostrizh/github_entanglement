@@ -1,6 +1,8 @@
 #ifndef CHANNEL_ENTRY_H
 #define CHANNEL_ENTRY_H
 #include<TTree.h>
+#include <TNtuple.h>
+#include <map>
 
 const int MAX_N_SAMPLES = 2048;
 
@@ -75,6 +77,66 @@ struct short_ChannelEntry
 	return tree->SetBranchAddress(GetChName(channel_num).Data(), this);
     }
     
+};
+
+
+struct mini_tree
+{
+
+    Float_t EdepScat0;
+    Float_t EdepScat1;
+    Float_t EdepDet0;
+    Float_t EdepDet1;    
+    Short_t DetNum0;
+    Short_t DetNum1;
+    Float_t EdepWeak;
+
+        std::map<TString, Float_t*> branchfloat = 
+        {
+            {"EdepScat0", &EdepScat0},
+            {"EdepScat1", &EdepScat1},
+            {"EdepDet0", &EdepDet0},
+            {"EdepDet1", &EdepDet1},     
+            {"EdepWeak", &EdepWeak}        
+        }; 
+        std::map<TString, Short_t*> branchshort = 
+        {
+            {"DetNum0", &DetNum0},
+            {"DetNum1", &DetNum1}
+        }; 
+
+
+    Int_t CreateBranches(TTree* mini_tree)
+    {
+        for (auto& val:branchfloat)
+        {
+            mini_tree->Branch(val.first,val.second,val.first+"\\F");
+        }
+        for (auto& val:branchshort)
+        {
+            mini_tree->Branch(val.first,val.second,val.first+"\\S");
+        }
+
+        return 1;
+    }
+
+    
+
+    Int_t Initialize()
+    {
+        for (auto& val:branchfloat)        
+        {
+            
+            val.second = 0;
+        }
+        for (auto& val:branchshort)
+        {
+            val.second = 0;
+
+        }
+        return 1;
+    }
+
 };
 
 #endif

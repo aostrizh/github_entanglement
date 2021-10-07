@@ -8,6 +8,7 @@
 
 #include <TROOT.h>
 #include <TFile.h>
+#include <TNtuple.h>
 #include <TTree.h>
 #include <TLeaf.h>
 
@@ -31,26 +32,39 @@ using namespace CHSH;
 #define CalculateRatio 1
 #define DrawTime 0
 #define UseIntegralCut 1
-#define UseNotEntangledPhotons 0
+#define UseNotEntangledPhotons 1
 #define TotalEnergyCut 0
 #define DrawToPDF 0
-#define calculate_CHSH 1
+#define calculate_CHSH 0
 
 /////////////////////////////////////////////////////
-void Final_Analysis()
+void Create_mini_tree()
 {
-    const Int_t events_divider = 1;
+    const Int_t events_divider = 1000;
 	gStyle->SetOptFit(1);
 	//gStyle->SetOptStat(1111);
-	TString source_path = "/home/doc/entanglement/new_files_data/";
+	TString source_path = "/home/doc/entanglement/root_files_data/with_scatterer/big_file/";
 	//TString source_path = "/home/doc/entanglement/root_files_data/collimator_4_8_cm_further_from_diffuser/";
 
 #if UseNotEntangledPhotons
-    TString result_path  = source_path + "result_ev_b_ev_decoh_new";
+    TString result_path  = source_path + "decoh_mini_tree";
 #else
-    TString result_path = source_path + "result_ev_b_ev_entangled_new";
+    TString result_path = source_path + "entangled_mini_tree";
 #endif
-    TFile *result_root = new TFile (result_path+".root", "RECREATE");
+    //TFile *result_root = new TFile (result_path+".root", "RECREATE");
+
+    TFile *mini_tree_file = new TFile(result_path+".root", "RECREATE");
+    //TNtuple *short_tree = new TNtuple("Signals","Signals","EdepScat0:EdepScat1:EdepDet0:EdepDet1:DetNum0:DetNum1:EdepWeak");
+    TTree *short_tree = new TTree("Signals","Signals");
+    mini_tree *mini_leaves = new mini_tree;
+    mini_leaves->CreateBranches(short_tree);
+    short_tree->Write();
+    mini_tree_file->Close();
+//////////////
+
+
+
+/////////////
 
     const Int_t left_NaI_range = 180;
     const Int_t righr_NaI_range = 280;
@@ -821,11 +835,11 @@ void Final_Analysis()
     {
         PMT_tree->GetEntry(NumEvent);
         if (NumEvent%1000000 == 0) cout << (float)NumEvent/calculate_Events_Number*100<<"%"<<endl;
-        Short_t counter_1 = 0;
-        Short_t counter_2 = 0;
+        Short_t counter_1 = 0; Short_t ch1 = 0;
+        Short_t counter_2 = 0; Short_t ch2 = 0;
         
-        for (Int_t channel_number = 0; channel_number < 16; channel_number++) if (short_channel_info[channel_number].amp > 400) counter_1++;
-        for (Int_t channel_number = 16; channel_number < 32; channel_number++) if (short_channel_info[channel_number].amp > 400) counter_2++;
+        for (Int_t channel_number = 0; channel_number < 16; channel_number++) if (short_channel_info[channel_number].amp > 400) {counter_1++; ch1 = channel_number;}
+        for (Int_t channel_number = 16; channel_number < 32; channel_number++) if (short_channel_info[channel_number].amp > 400) {counter_2++; ch2 = channel_number;}
 
 
         for (Int_t channel_number = 0; channel_number < 16; channel_number++)
@@ -835,10 +849,10 @@ void Final_Analysis()
                 if(
                     abs(short_channel_info[33].peak_pos - short_channel_info[32].peak_pos) < 30
 
-                    && counter_1 ==1 && counter_2 ==1
+                    && (counter_1 == 1 && counter_2 == 1) && (counter_1 < 2 && counter_2 < 2)
            
 #if UseIntegralCut
-                && short_channel_info[channel_number].integral_in_gate > low_cut[channel_number]
+/*                && short_channel_info[channel_number].integral_in_gate > low_cut[channel_number]
                 && short_channel_info[channel_number].integral_in_gate < high_cut[channel_number]
                 && short_channel_info[channel_number_2].integral_in_gate > low_cut[channel_number_2]
                 && short_channel_info[channel_number_2].integral_in_gate < high_cut[channel_number_2]
@@ -847,6 +861,8 @@ void Final_Analysis()
                 && short_channel_info[32].integral_in_gate < high_energy_cut[channel_number]
                 && short_channel_info[33].integral_in_gate > low_energy_cut[channel_number_2]
                 && short_channel_info[33].integral_in_gate < high_energy_cut[channel_number_2]                
+
+*/
 #endif                
                 && abs(short_channel_info[33].peak_pos - short_channel_info[32].peak_pos) < 30
 
@@ -889,8 +905,18 @@ void Final_Analysis()
 #endif
                 )
                 {
-                    hist_charge[channel_number][channel_number_2-16]->Fill(
-                    short_channel_info[32].integral_in_gate + short_channel_info[channel_number].integral_in_gate);
+
+                    Float_t EdepWeak = 0.;
+#if PresentDiffuser
+#if UseNotEntangledPhotons
+                    EdepWeak = short_channel_info[34].integral_in_gate;
+#endif
+#endif
+                    // if ( channel_number == ch1 && channel_number_2 == ch2) short_tree->
+                    // Fill(short_channel_info[32].integral_in_gate, short_channel_info[33].integral_in_gate,
+                    // short_channel_info[ch1].integral_in_gate, short_channel_info[ch2].integral_in_gate, 
+                    // ch1,ch2,
+                    // EdepWeak);
                 }
             }
         }
@@ -1106,11 +1132,8 @@ Float_t average_E = 0; Float_t sigma_E_average = 0;
 
 
 
-
-    result_root->Close();
+    //short_tree->Write();
+    //mini_tree_file->Close();
 
 }
 
-
-
-//////////////////////
